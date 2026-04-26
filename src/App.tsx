@@ -1129,7 +1129,7 @@ export default function App() {
           )}
           {view === "initial" && <span />}
           <p className="text-xs flex items-center gap-1" style={{ color: "#aaa" }}>
-            Hermes v1.0.4 · Secure P2P
+            Hermes v1.0.1 · Secure P2P
             {updateAvailable && (
               <span
                 onClick={() => relaunchProcess()}
