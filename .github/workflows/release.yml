@@ -15,11 +15,17 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
       - name: Install dependencies
         shell: pwsh
         run: |
-          npm install -g yarn
-          yarn --version
+          npm install
+          npm install -g @tauri-apps/cli
 
       - name: Build App
         uses: tauri-apps/tauri-action@v0
