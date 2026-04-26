@@ -1,0 +1,78 @@
+{
+  "productName": "Hermes",
+  "version": "1.0.1",
+  "identifier": "com.hermes.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Hermes",
+        "width": 520,
+        "height": 620,
+        "minWidth": 480,
+        "minHeight": 500,
+        "center": true,
+        "resizable": true,
+        "maximizable": true,
+        "minimizable": true,
+        "closable": true,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": false,
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "macOSPrivateApi": false
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis", "dmg", "app", "appimage"],
+    "category": "Utility",
+    "shortDescription": "P2P File Transfer",
+    "longDescription": "Hermes is a peer-to-peer file transfer application with unique device IDs",
+    "createUpdaterArtifacts": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "",
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "installMode": "both"
+      }
+    },
+    "macOS": {
+      "frameworks": [],
+      "minimumSystemVersion": "10.13",
+      "hardenedRuntime": true
+    },
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI4NDg2MkZBQTYwMTEzREYKUldUZkV3R20rbUpJdURVVFM4S1Vpajlzb2d0SnhiOHZJY2VoUTZoTG5tT1lCNFpjckhOZGlzWDgK",
+      "endpoints": [
+        "https://github.com/MidacoYT/Hermes-P2P/releases/latest/download/update.json"
+      ]
+    }
+  }
+}

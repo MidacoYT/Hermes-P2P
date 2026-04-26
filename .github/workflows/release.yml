@@ -28,4 +28,4 @@ jobs:
         with:
           tagName: ${GITHUB_REF_NAME}
           releaseName: "Hermes v${GITHUB_REF_NAME}"
-          releaseNotes: "Automatic release of Hermes v${GITHUB_REF_NAME}"
+          releaseBody: "Automatic release of Hermes v${GITHUB_REF_NAME}"

@@ -1,0 +1,27 @@
+# Tauri / Rust ignores
+/src-tauri/target
+/src-tauri/binaries
+/src-tauri/bundle
+/src-tauri/dist
+/src-tauri/tests
+/src-tauri/screenshots
+
+# Node ignores
+node_modules/
+dist/
+.env
+.env.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# IDE ignores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS ignores
+.DS_Store
+Thumbs.db
