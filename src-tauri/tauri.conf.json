@@ -1,6 +1,6 @@
 {
   "productName": "Hermes",
-  "version": "1.0.1",
+  "version": "1.0.5",
   "identifier": "com.hermes.app",
   "build": {
     "frontendDist": "../dist",
