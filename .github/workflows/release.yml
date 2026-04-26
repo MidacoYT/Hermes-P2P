@@ -34,6 +34,6 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${GITHUB_REF_NAME}
-          releaseName: "Hermes v${GITHUB_REF_NAME}"
-          releaseBody: "Automatic release of Hermes v${GITHUB_REF_NAME}"
+          tagName: ${{ github.ref_name }}
+          releaseName: "Hermes ${{ github.ref_name }}"
+          releaseBody: "Automatic release of Hermes ${{ github.ref_name }}"
