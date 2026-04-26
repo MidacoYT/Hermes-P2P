@@ -3,6 +3,9 @@ import { io, Socket } from "socket.io-client";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { check, relaunch } from "@tauri-apps/plugin-updater";
 import { relaunch as relaunchProcess } from "@tauri-apps/plugin-process";
+import { open } from "@tauri-apps/plugin-dialog";
+import { writeFile, mkdir } from "@tauri-apps/plugin-fs";
+import { join, downloadDir } from "@tauri-apps/api/path";
 
 type View = "initial" | "sender" | "receiver";
 type ConnectionState = "disconnected" | "connecting" | "connected" | "error";
@@ -107,6 +110,8 @@ export default function App() {
   const [receivedFiles, setReceivedFiles] = useState<ReceivedFile[]>([]);
   const [transferSpeed, setTransferSpeed] = useState("");
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [downloadFolder, setDownloadFolder] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -497,19 +502,74 @@ export default function App() {
   const handleBack = () => {
     setView("initial");
     setFiles([]);
-    setReceivedFiles([]);
+    // Don't clear receivedFiles so user can still download them
     setProgress(0);
     setJoinId("");
     setTransferSpeed("");
     setSenderStatus("Ready. Create a transfer to begin.");
     setReceiverStatus("Ready to connect");
 
-    // Cleanup connections
+    // Cleanup WebRTC connections only (keep socket connected)
     dataChannelRef.current?.close();
     peerConnectionRef.current?.close();
     dataChannelRef.current = null;
     peerConnectionRef.current = null;
-    setConnectionState("disconnected");
+    // Don't set connectionState to disconnected - keep socket state
+  };
+
+  // Select download folder
+  const selectDownloadFolder = async () => {
+    try {
+      const folder = await open({
+        directory: true,
+        multiple: false,
+        defaultPath: await downloadDir(),
+      });
+      if (folder) {
+        setDownloadFolder(folder);
+      }
+    } catch (err) {
+      console.error("Failed to select folder:", err);
+    }
+  };
+
+  // Save received file to selected folder
+  const saveFileToFolder = async (file: ReceivedFile) => {
+    if (!downloadFolder) {
+      // If no folder selected, use default downloads
+      const defaultFolder = await downloadDir();
+      setDownloadFolder(defaultFolder);
+    }
+    
+    setIsSaving(true);
+    try {
+      const targetFolder = downloadFolder || (await downloadDir());
+      const filePath = await join(targetFolder, file.name);
+      
+      // Convert ArrayBuffer to Uint8Array for Tauri
+      const content = new Uint8Array(file.data);
+      await writeFile(filePath, content);
+      
+      console.log(`Saved: ${filePath}`);
+      setReceiverStatus(`Saved: ${file.name}`);
+    } catch (err) {
+      console.error("Failed to save file:", err);
+      setReceiverStatus(`Failed to save: ${file.name}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Save all files
+  const saveAllFiles = async () => {
+    if (!downloadFolder) {
+      await selectDownloadFolder();
+      return;
+    }
+    
+    for (const file of receivedFiles) {
+      await saveFileToFolder(file);
+    }
   };
 
   const isStatusDone = receivedFiles.length > 0;
@@ -1039,27 +1099,62 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Folder Selection & Save */}
               {isStatusDone && (
-                <button
-                  onClick={downloadAllFiles}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg text-sm font-semibold"
-                  style={{
-                    padding: "12px",
-                    background: "linear-gradient(135deg, #107c10, #0b5c0b)",
-                    color: "white",
-                    border: "none",
-                    boxShadow: "0 2px 12px rgba(16,124,16,0.35)",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(1.08)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.filter = "none")}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  Save Files ({receivedFiles.length})
-                </button>
+                <div className="flex flex-col gap-3">
+                  {/* Selected Folder Display */}
+                  <div
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
+                    style={{ background: "rgba(0,0,0,0.04)", color: "#666" }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <span className="truncate flex-1">
+                      {downloadFolder ? downloadFolder : "Default: Downloads"}
+                    </span>
+                    <button
+                      onClick={selectDownloadFolder}
+                      className="px-2 py-1 rounded text-xs font-medium"
+                      style={{ background: "rgba(0,120,212,0.1)", color: "#0078d4" }}
+                    >
+                      Change
+                    </button>
+                  </div>
+
+                  {/* Save All Button */}
+                  <button
+                    onClick={saveAllFiles}
+                    disabled={isSaving}
+                    className="w-full flex items-center justify-center gap-2 rounded-lg text-sm font-semibold"
+                    style={{
+                      padding: "12px",
+                      background: "linear-gradient(135deg, #0078d4, #005a9e)",
+                      color: "white",
+                      border: "none",
+                      cursor: isSaving ? "wait" : "pointer",
+                      opacity: isSaving ? 0.7 : 1,
+                    }}
+                  >
+                    {isSaving ? (
+                      <>
+                        <svg width="18" height="18" viewBox="0 0 24 24" className="animate-spin">
+                          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth={2} strokeDasharray="60" strokeDashoffset="20" />
+                        </svg>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Save All ({receivedFiles.length})
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
 
               {/* Received Files List */}
@@ -1077,7 +1172,7 @@ export default function App() {
                         key={i}
                         className="flex items-center gap-3 px-4 py-2.5 transition-colors duration-100 cursor-pointer"
                         style={{ borderBottom: i < receivedFiles.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none" }}
-                        onClick={() => downloadFile(f)}
+                        onClick={() => saveFileToFolder(f)}
                         onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.03)")}
                         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                       >
@@ -1129,7 +1224,7 @@ export default function App() {
           )}
           {view === "initial" && <span />}
           <p className="text-xs flex items-center gap-1" style={{ color: "#aaa" }}>
-            Hermes v1.1.2 · Secure P2P
+            Hermes v1.1.3 · Secure P2P
             {updateAvailable && (
               <span
                 onClick={() => relaunchProcess()}
