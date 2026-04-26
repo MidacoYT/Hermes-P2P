@@ -6,7 +6,7 @@ use tauri::Manager;
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_updater::init())
+        .plugin(tauri_plugin_updater::Builder::default().build())
         .setup(|app| {
             // Get the main window
             let _main_window = app.get_webview_window("main").unwrap();
